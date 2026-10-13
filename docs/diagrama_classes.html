@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Diagrama de Classes</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; color: #111; background: #fff; }
+  section { page-break-after: always; break-after: page; height: 188mm; display: flex; flex-direction: column; }
+  section:last-child { page-break-after: auto; break-after: auto; }
+  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #999; padding-bottom: 2mm; margin-bottom: 3mm; }
+  h1 { font-size: 15pt; margin: 0; }
+  header span { font-size: 9pt; color: #555; }
+  .diagrama { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+  .diagrama svg { max-width: 100% !important; max-height: 170mm; width: auto; height: auto; }
+</style>
+</head>
+<body>
+
+<section>
+  <header><h1>Diagrama de Classes — Pacote org.example.Models</h1><span>Editor de Desenho Vetorial · POO 1 · N3</span></header>
+  <div class="diagrama"><pre class="mermaid">
+classDiagram
+direction LR
+class FormaGeometrica {
+  &lt;&lt;interface&gt;&gt;
+  +adicionarPonto(Ponto p) void
+  +getPontos() List~Ponto~
+  +getQuantidadePontos() int
+  +getCorPreenchimentoHex() String
+  +setCorPreenchimentoHex(String hex) void
+  +getCorBordaHex() String
+  +setCorBordaHex(String hex) void
+  +getEspessuraBorda() double
+  +setEspessuraBorda(double espessura) void
+  +getGroupId() String
+  +setGroupId(String groupId) void
+  +calcularArea() double
+  +calcularPerimetro() double
+  +getCentroide() Ponto
+  +contemPonto(double px, double py) boolean
+  +transladar(double dx, double dy) void
+  +escalar(double fator) void
+  +rotacionar(double anguloRadianos) void
+  +cisalhar(double shx, double shy) void
+  +clonar() FormaGeometrica
+}
+class FormaBase {
+  &lt;&lt;abstract&gt;&gt;
+  #pontos: List~Ponto~
+  #corPreenchimentoHex: String
+  #corBordaHex: String
+  #espessuraBorda: double
+  #groupId: String
+  +validar() void
+  #copiarPara(FormaBase destino) FormaGeometrica
+  #gerarRegular(Ponto centro, double raio, int lados, double anguloInicial) void
+  -validarHex(String hex) String$
+}
+class Ponto {
+  -x: double
+  -y: double
+  +Ponto(double x, double y)
+  +getX() double
+  +getY() double
+  +setX(double x) void
+  +setY(double y) void
+  +mover(double dx, double dy) void
+  +distancia(Ponto outro) double
+  +clonar() Ponto
+}
+class Poligono {
+  +Poligono()
+  +clonar() FormaGeometrica
+}
+class Circulo {
+  -Circulo()
+  +Circulo(Ponto centro, double raio)
+  +clonar() FormaGeometrica
+}
+class Quadrado {
+  -Quadrado()
+  +Quadrado(Ponto centro, double raio)
+  +clonar() FormaGeometrica
+}
+class Hexagono {
+  -Hexagono()
+  +Hexagono(Ponto centro, double raio)
+  +clonar() FormaGeometrica
+}
+FormaGeometrica <|.. FormaBase
+FormaBase "1" *-- "*" Ponto : pontos
+FormaBase <|-- Poligono
+FormaBase <|-- Circulo
+FormaBase <|-- Quadrado
+FormaBase <|-- Hexagono
+  </pre></div>
+</section>
+
+<section>
+  <header><h1>Diagrama de Classes — Pacote org.example.Controller</h1><span>Editor de Desenho Vetorial · POO 1 · N3</span></header>
+  <div class="diagrama"><pre class="mermaid">
+classDiagram
+direction LR
+class EditorContext {
+  +TAMANHO_GRADE: double$
+  -formas: List~FormaGeometrica~
+  -selecionados: List~FormaGeometrica~
+  -formaEmAndamento: FormaGeometrica
+  -ferramentaAtual: Ferramenta
+  -gridSnappingHabilitado: boolean
+  -historico: HistoricoController
+  -alteracoesNaoSalvas: boolean
+  -caixaSelecao: double[]
+  -corPreenchimentoHex: String
+  -corBordaHex: String
+  -espessuraBorda: double
+  -onRedraw: Runnable
+  -onStats: Runnable
+  -onAviso: Consumer~String~
+  +requestRedraw() void
+  +requestStatsUpdate() void
+  +avisar(String mensagem) void
+  +aplicarSnap(double valor) double
+  +registrarEstado() void
+  +desfazer() void
+  +refazer() void
+  +carregar(List~FormaGeometrica~ formas, boolean grade) void
+  +adicionarForma(FormaGeometrica f) void
+  +formaEm(double x, double y) FormaGeometrica
+  +selecionar(FormaGeometrica f, boolean adicionar) void
+  +selecionarNaCaixa(double x1, double y1, double x2, double y2, boolean adicionar) void
+  +excluir(FormaGeometrica f) void
+  +excluirSelecionados() void
+  +agruparSelecionados() void
+  +desagruparSelecionados() void
+  +trazerParaFrente() void
+  +enviarParaTras() void
+  +duplicarSelecionados() void
+  +escalarSelecionados(double k) void
+  +rotacionarSelecionados(double a) void
+  +cisalharSelecionados(double shx, double shy) void
+  -transformarSelecionados(Consumer~FormaGeometrica~ op, UnaryOperator~Ponto~ linear) void
+  +setEstilo(String preenchimento, String borda, double espessura) void
+  +setEstiloAtual(String preenchimento, String borda, double espessura) void
+  +setFerramentaAtual(Ferramenta ferramenta) void
+  +setFormaEmAndamento(FormaGeometrica f) void
+  +marcarSalvo() void
+  +temAlteracoesNaoSalvas() boolean
+}
+class HistoricoController {
+  -undoStack: Stack~List~FormaGeometrica~~
+  -redoStack: Stack~List~FormaGeometrica~~
+  +registrarEstado(List~FormaGeometrica~ formas) void
+  +desfazer(List~FormaGeometrica~ atual) List~FormaGeometrica~
+  +refazer(List~FormaGeometrica~ atual) List~FormaGeometrica~
+  +limpar() void
+  -copiar(List~FormaGeometrica~ formas) List~FormaGeometrica~$
+}
+class PersistenciaController {
+  -GSON: Gson$
+  -TIPOS: Map~String, Class~$
+  +paraJson(List~FormaGeometrica~ formas, double largura, double altura, boolean grade) String$
+  +deJson(String json) Documento$
+}
+class Documento["PersistenciaController.Documento"] {
+  &lt;&lt;record&gt;&gt;
+  +gradeHabilitada: boolean
+  +formas: List~FormaGeometrica~
+}
+class Ferramenta {
+  &lt;&lt;interface&gt;&gt;
+  +aoPressionarMouse(MouseEvent e, EditorContext ctx) void
+  +aoArrastarMouse(MouseEvent e, EditorContext ctx) void
+  +aoSoltarMouse(MouseEvent e, EditorContext ctx) void
+  +aoClicar(MouseEvent e, EditorContext ctx) void
+}
+class FormaGeometrica {
+  &lt;&lt;interface&gt;&gt;
+}
+EditorContext "1" o-- "1" Ferramenta : ferramentaAtual
+EditorContext "1" *-- "1" HistoricoController : historico
+EditorContext "1" o-- "*" FormaGeometrica : formas
+HistoricoController ..> FormaGeometrica : clonar()
+PersistenciaController ..> Documento : cria
+PersistenciaController ..> FormaGeometrica : serializa
+  </pre></div>
+</section>
+
+<section>
+  <header><h1>Diagrama de Classes — Pacote org.example.Views (e lançador org.example.Main)</h1><span>Editor de Desenho Vetorial · POO 1 · N3</span></header>
+  <div class="diagrama"><pre class="mermaid">
+classDiagram
+direction LR
+class Application {
+  &lt;&lt;JavaFX&gt;&gt;
+}
+class VBox {
+  &lt;&lt;JavaFX&gt;&gt;
+}
+class HBox {
+  &lt;&lt;JavaFX&gt;&gt;
+}
+class EditorContext {
+  &lt;&lt;Controller&gt;&gt;
+}
+class PersistenciaController {
+  &lt;&lt;Controller&gt;&gt;
+}
+class ContainerApp {
+  -areaDeDesenho: Canvas
+  -contexto: EditorContext
+  -barraLateral: BarraLateralView
+  -painelStatus: PainelStatusView
+  -stage: Stage
+  +start(Stage stage) void
+  +inicializarEventos(Scene cena) void
+  -redesenharCanvas() void
+  -desenharForma(FormaGeometrica f, boolean selecionada) void
+  -salvarArquivo() void
+  -carregarArquivo() void
+  -confirmarDescarte() boolean
+  -erro(String cabecalho, String detalhe) void
+}
+class BarraLateralView {
+  -contexto: EditorContext
+  -grupoFerramentas: ToggleGroup
+  -corPreenchimento: ColorPicker
+  -corBorda: ColorPicker
+  -espessura: Slider
+  -grade: CheckBox
+  +BarraLateralView(EditorContext contexto, Runnable salvar, Runnable carregar)
+  +atualizarCoresInterface() void
+  +atualizarGrade() void
+  -construirSecaoEstilos() void
+  -construirSecaoFerramentas() void
+  -construirSecaoCamadas() void
+  -aplicarEstilo() void
+}
+class PainelStatusView {
+  -contexto: EditorContext
+  -coordenadas: Label
+  -totais: Label
+  -medidas: Label
+  +atualizar() void
+  +setCoordenadas(double x, double y) void
+}
+class Main {
+  +main(String[] args) void$
+}
+Application <|-- ContainerApp
+VBox <|-- BarraLateralView
+HBox <|-- PainelStatusView
+ContainerApp *-- BarraLateralView
+ContainerApp *-- PainelStatusView
+ContainerApp --> EditorContext : contexto
+ContainerApp ..> PersistenciaController : usa
+BarraLateralView --> EditorContext : usa
+PainelStatusView --> EditorContext : usa
+Main ..> ContainerApp : launch
+  </pre></div>
+</section>
+
+<section>
+  <header><h1>Diagrama de Classes — Ferramentas (padrão State)</h1><span>Editor de Desenho Vetorial · POO 1 · N3</span></header>
+  <div class="diagrama"><pre class="mermaid">
+classDiagram
+direction TB
+class Ferramenta {
+  &lt;&lt;interface&gt;&gt;
+  +aoPressionarMouse(MouseEvent e, EditorContext ctx) void
+  +aoArrastarMouse(MouseEvent e, EditorContext ctx) void
+  +aoSoltarMouse(MouseEvent e, EditorContext ctx) void
+  +aoClicar(MouseEvent e, EditorContext ctx) void
+}
+class FerramentaDesenhar {
+  +aoClicar(MouseEvent e, EditorContext ctx) void
+  -finalizar(Poligono p, EditorContext ctx) void
+}
+class FerramentaSelecionar {
+  -arrastandoCaixa: boolean
+  -selecaoStartX: double
+  -selecaoStartY: double
+  -ultimoX: double
+  -ultimoY: double
+  -moveu: boolean
+}
+class FerramentaTransformar {
+  -modo: ModoFerramenta
+  -ultimoX: double
+  -ultimoY: double
+  -alterou: boolean
+  +FerramentaTransformar(ModoFerramenta modo)
+}
+class FerramentaInserirForma {
+  -RAIO_PADRAO: double$
+  -tipo: Tipo
+  -centroInsercao: Ponto
+  +FerramentaInserirForma(Tipo tipo)
+  -criar(double raio) FormaGeometrica
+}
+class FerramentaEditarVertice {
+  -TOLERANCIA: double$
+  -verticeSelecionado: Ponto
+  -alterou: boolean
+}
+class ModoFerramenta {
+  &lt;&lt;enumeration&gt;&gt;
+  ESCALAR
+  ROTACIONAR
+  CISALHAR
+  EXCLUIR
+}
+class Tipo["FerramentaInserirForma.Tipo"] {
+  &lt;&lt;enumeration&gt;&gt;
+  QUADRADO
+  CIRCULO
+  HEXAGONO
+}
+class EditorContext {
+  -ferramentaAtual: Ferramenta
+}
+EditorContext "1" o-- "1" Ferramenta : estado atual
+Ferramenta <|.. FerramentaDesenhar
+Ferramenta <|.. FerramentaSelecionar
+Ferramenta <|.. FerramentaTransformar
+Ferramenta <|.. FerramentaInserirForma
+Ferramenta <|.. FerramentaEditarVertice
+FerramentaTransformar --> ModoFerramenta : modo
+FerramentaInserirForma --> Tipo : tipo
+  </pre></div>
+</section>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "base",
+    themeVariables: {
+      primaryColor: "#fff8d6", primaryBorderColor: "#333", primaryTextColor: "#111",
+      lineColor: "#333", fontFamily: "Segoe UI, Arial, sans-serif", fontSize: "13px"
+    },
+    class: { useMaxWidth: false }
+  });
+  let i = 0;
+  for (const pre of document.querySelectorAll("pre.mermaid")) {
+    const { svg } = await mermaid.render("diagrama" + i++, pre.textContent);
+    pre.outerHTML = svg;
+  }
+  document.body.dataset.pronto = "1";
+</script>
+</body>
+</html>
