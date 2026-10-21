@@ -51,8 +51,8 @@ public class ContainerApp extends Application {
         BorderPane raiz = new BorderPane(centro, null, null, painelStatus, lateral);
         Scene cena = new Scene(raiz, 1280, 800);
 
-        inicializarEventos(cena);
-        stage.setTitle("Editor de Desenho Vetorial - POO 1");
+        inicializarEventos();
+        stage.setTitle("Editor de Desenho Vetorial - POO");
         stage.setScene(cena);
         stage.setOnCloseRequest(e -> {
             if (!confirmarDescarte()) e.consume();
@@ -61,7 +61,8 @@ public class ContainerApp extends Application {
         redesenharCanvas();
     }
 
-    public void inicializarEventos(Scene cena) {
+    /** Chamado depois que o canvas já está numa Scene (os atalhos de teclado ficam nela). */
+    public void inicializarEventos() {
         contexto.setOnRedraw(this::redesenharCanvas);
         contexto.setOnStats(() -> {
             painelStatus.atualizar();
@@ -82,7 +83,7 @@ public class ContainerApp extends Application {
         areaDeDesenho.setOnMouseClicked(e -> contexto.getFerramentaAtual().aoClicar(e, contexto));
         areaDeDesenho.setOnMouseMoved(e -> painelStatus.setCoordenadas(e.getX(), e.getY()));
 
-        var atalhos = cena.getAccelerators();
+        var atalhos = areaDeDesenho.getScene().getAccelerators();
         atalhos.put(new KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN), contexto::desfazer);
         atalhos.put(new KeyCodeCombination(KeyCode.Y, KeyCombination.SHORTCUT_DOWN), contexto::refazer);
         atalhos.put(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN), this::salvarArquivo);

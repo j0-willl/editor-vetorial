@@ -18,7 +18,7 @@
 <body>
 
 <section>
-  <header><h1>Diagrama de Classes — Pacote org.example.Models</h1><span>Editor de Desenho Vetorial · POO 1 · N3</span></header>
+  <header><h1>Diagrama de Classes — Pacote org.example.Models</h1><span>Editor de Desenho Vetorial · POO · N2</span></header>
   <div class="diagrama"><pre class="mermaid">
 classDiagram
 direction LR
@@ -98,7 +98,7 @@ FormaBase <|-- Hexagono
 </section>
 
 <section>
-  <header><h1>Diagrama de Classes — Pacote org.example.Controller</h1><span>Editor de Desenho Vetorial · POO 1 · N3</span></header>
+  <header><h1>Diagrama de Classes — Pacote org.example.Controller</h1><span>Editor de Desenho Vetorial · POO · N2</span></header>
   <div class="diagrama"><pre class="mermaid">
 classDiagram
 direction LR
@@ -188,7 +188,7 @@ PersistenciaController ..> FormaGeometrica : serializa
 </section>
 
 <section>
-  <header><h1>Diagrama de Classes — Pacote org.example.Views (e lançador org.example.Main)</h1><span>Editor de Desenho Vetorial · POO 1 · N3</span></header>
+  <header><h1>Diagrama de Classes — Pacote org.example.Views (e lançador org.example.Main)</h1><span>Editor de Desenho Vetorial · POO · N2</span></header>
   <div class="diagrama"><pre class="mermaid">
 classDiagram
 direction LR
@@ -214,7 +214,7 @@ class ContainerApp {
   -painelStatus: PainelStatusView
   -stage: Stage
   +start(Stage stage) void
-  +inicializarEventos(Scene cena) void
+  +inicializarEventos() void
   -redesenharCanvas() void
   -desenharForma(FormaGeometrica f, boolean selecionada) void
   -salvarArquivo() void
@@ -262,7 +262,7 @@ Main ..> ContainerApp : launch
 </section>
 
 <section>
-  <header><h1>Diagrama de Classes — Ferramentas (padrão State)</h1><span>Editor de Desenho Vetorial · POO 1 · N3</span></header>
+  <header><h1>Diagrama de Classes — Ferramentas (padrão State)</h1><span>Editor de Desenho Vetorial · POO · N2</span></header>
   <div class="diagrama"><pre class="mermaid">
 classDiagram
 direction TB
