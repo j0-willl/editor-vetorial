@@ -10,7 +10,7 @@ import org.example.Models.FormaGeometrica;
 public class FerramentaTransformar implements Ferramenta {
     private final ModoFerramenta modo;
     private double ultimoX, ultimoY;
-    private boolean alterou;
+    private boolean alterou; // um registro no histórico por arrasto
 
     public FerramentaTransformar(ModoFerramenta modo) {
         this.modo = modo;
@@ -31,6 +31,7 @@ public class FerramentaTransformar implements Ferramenta {
         ctx.requestStatsUpdate();
     }
 
+    /** Converte o movimento do mouse (dx, dy) num pequeno passo da transformação. */
     @Override
     public void aoArrastarMouse(MouseEvent e, EditorContext ctx) {
         if (modo == ModoFerramenta.EXCLUIR || ctx.getSelecionados().isEmpty()) return;
@@ -42,8 +43,8 @@ public class FerramentaTransformar implements Ferramenta {
             alterou = true;
         }
         switch (modo) {
-            case ESCALAR -> ctx.escalarSelecionados(Math.max(0.1, 1 - dy * 0.01));
-            case ROTACIONAR -> ctx.rotacionarSelecionados(dx * 0.01);
+            case ESCALAR -> ctx.escalarSelecionados(Math.max(0.1, 1 - dy * 0.01)); // mouse pra cima (dy < 0) aumenta
+            case ROTACIONAR -> ctx.rotacionarSelecionados(dx * 0.01); // ângulo em radianos
             case CISALHAR -> ctx.cisalharSelecionados(dx * 0.005, dy * 0.005);
             default -> { }
         }

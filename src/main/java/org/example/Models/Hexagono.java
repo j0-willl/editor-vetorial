@@ -1,6 +1,8 @@
 package org.example.Models;
 
+/** Hexágono regular com 6 vértices calculados a partir do centro e do raio. */
 public class Hexagono extends FormaBase {
+    /** Construtor vazio privado: usado só pelo clonar() e pelo Gson ao carregar. */
     private Hexagono() {
     }
 

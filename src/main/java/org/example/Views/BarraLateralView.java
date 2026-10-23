@@ -21,6 +21,7 @@ import org.example.Controller.FerramentaTransformar;
 import org.example.Controller.ModoFerramenta;
 import org.example.Models.FormaGeometrica;
 
+/** Barra lateral: estilos, botões de ferramenta (toggle), camadas/grupos e sistema. */
 public class BarraLateralView extends VBox {
     private final EditorContext contexto;
     private final ToggleGroup grupoFerramentas = new ToggleGroup();
@@ -30,6 +31,7 @@ public class BarraLateralView extends VBox {
     private final CheckBox grade = new CheckBox("Grade Magnética (Snapping)");
     private boolean atualizandoInterface; // evita que mudanças programáticas virem ações do usuário
 
+    /** salvar e carregar vêm da ContainerApp, que é quem abre os diálogos de arquivo. */
     public BarraLateralView(EditorContext contexto, Runnable salvar, Runnable carregar) {
         super(6);
         this.contexto = contexto;
@@ -60,6 +62,7 @@ public class BarraLateralView extends VBox {
         contexto.setEstiloAtual(f.getCorPreenchimentoHex(), f.getCorBordaHex(), f.getEspessuraBorda());
     }
 
+    /** Sincroniza a caixinha da grade depois de carregar um arquivo. */
     public void atualizarGrade() {
         grade.setSelected(contexto.isGridSnappingHabilitado());
     }
@@ -80,6 +83,7 @@ public class BarraLateralView extends VBox {
                 new Label("Espessura da Borda:"), espessura, grade);
     }
 
+    /** Cada botão guarda uma instância de ferramenta; clicar troca o estado do editor (State). */
     private void construirSecaoFerramentas() {
         titulo("FERRAMENTAS");
         ferramenta("Polígono (cliques)", new FerramentaDesenhar());
@@ -96,7 +100,7 @@ public class BarraLateralView extends VBox {
         ferramenta("Inserir Círculo", new FerramentaInserirForma(FerramentaInserirForma.Tipo.CIRCULO));
         ferramenta("⬡ Inserir Hexágono", new FerramentaInserirForma(FerramentaInserirForma.Tipo.HEXAGONO));
 
-        selecionar.fire();
+        selecionar.fire(); // começa com "Selecionar" ativo
     }
 
     private void construirSecaoCamadas() {
@@ -108,12 +112,16 @@ public class BarraLateralView extends VBox {
         botao("Duplicar (Ctrl+D)", contexto::duplicarSelecionados);
     }
 
+    /** Envia as cores e a espessura escolhidas para o contexto (só se foi o usuário que mudou). */
     private void aplicarEstilo() {
         if (!atualizandoInterface) {
             contexto.setEstilo(hex(corPreenchimento.getValue()), hex(corBorda.getValue()), espessura.getValue());
         }
     }
 
+    // Auxiliares que criam os componentes e já os adicionam na barra
+
+    /** Botão de ferramenta: só um fica ligado por vez (ToggleGroup). */
     private ToggleButton ferramenta(String nome, Ferramenta f) {
         ToggleButton b = new ToggleButton(nome);
         b.setToggleGroup(grupoFerramentas);
@@ -141,6 +149,7 @@ public class BarraLateralView extends VBox {
         getChildren().add(l);
     }
 
+    /** Converte a cor do JavaFX (componentes de 0 a 1) para texto #rrggbb. */
     static String hex(Color c) {
         return String.format("#%02x%02x%02x",
                 Math.round(c.getRed() * 255), Math.round(c.getGreen() * 255), Math.round(c.getBlue() * 255));

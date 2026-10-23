@@ -25,13 +25,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
+/** Janela principal: monta a tela, liga os eventos, desenha as formas e salva/carrega arquivos. */
 public class ContainerApp extends Application {
-    private Canvas areaDeDesenho;
+    private Canvas areaDeDesenho; // área branca onde as formas são desenhadas
     private EditorContext contexto;
     private BarraLateralView barraLateral;
     private PainelStatusView painelStatus;
-    private Stage stage;
+    private Stage stage; // a janela, usada pelos diálogos de arquivo
 
+    /** Chamado pelo JavaFX ao abrir o programa. */
     @Override
     public void start(Stage stage) {
         this.stage = stage;
@@ -40,6 +42,7 @@ public class ContainerApp extends Application {
         painelStatus = new PainelStatusView(contexto);
         barraLateral = new BarraLateralView(contexto, this::salvarArquivo, this::carregarArquivo);
 
+        // o canvas acompanha o tamanho da janela
         Pane centro = new Pane(areaDeDesenho);
         areaDeDesenho.widthProperty().bind(centro.widthProperty());
         areaDeDesenho.heightProperty().bind(centro.heightProperty());
@@ -48,6 +51,7 @@ public class ContainerApp extends Application {
         lateral.setFitToWidth(true);
         lateral.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
+        // layout: canvas no centro, status embaixo, barra lateral à esquerda
         BorderPane raiz = new BorderPane(centro, null, null, painelStatus, lateral);
         Scene cena = new Scene(raiz, 1280, 800);
 
@@ -55,7 +59,7 @@ public class ContainerApp extends Application {
         stage.setTitle("Editor de Desenho Vetorial - POO");
         stage.setScene(cena);
         stage.setOnCloseRequest(e -> {
-            if (!confirmarDescarte()) e.consume();
+            if (!confirmarDescarte()) e.consume(); // consume() cancela o fechamento
         });
         stage.show();
         redesenharCanvas();
@@ -63,6 +67,7 @@ public class ContainerApp extends Application {
 
     /** Chamado depois que o canvas já está numa Scene (os atalhos de teclado ficam nela). */
     public void inicializarEventos() {
+        // callbacks: é assim que o Controller avisa a tela sem conhecê-la
         contexto.setOnRedraw(this::redesenharCanvas);
         contexto.setOnStats(() -> {
             painelStatus.atualizar();
@@ -83,6 +88,7 @@ public class ContainerApp extends Application {
         areaDeDesenho.setOnMouseClicked(e -> contexto.getFerramentaAtual().aoClicar(e, contexto));
         areaDeDesenho.setOnMouseMoved(e -> painelStatus.setCoordenadas(e.getX(), e.getY()));
 
+        // atalhos de teclado (SHORTCUT = Ctrl no Windows)
         var atalhos = areaDeDesenho.getScene().getAccelerators();
         atalhos.put(new KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN), contexto::desfazer);
         atalhos.put(new KeyCodeCombination(KeyCode.Y, KeyCombination.SHORTCUT_DOWN), contexto::refazer);
@@ -91,6 +97,7 @@ public class ContainerApp extends Application {
         atalhos.put(new KeyCodeCombination(KeyCode.DELETE), contexto::excluirSelecionados);
     }
 
+    /** Limpa e redesenha tudo: grade, formas (na ordem das camadas), prévia e caixa de seleção. */
     private void redesenharCanvas() {
         GraphicsContext gc = areaDeDesenho.getGraphicsContext2D();
         double w = areaDeDesenho.getWidth(), h = areaDeDesenho.getHeight();
@@ -98,7 +105,7 @@ public class ContainerApp extends Application {
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, w, h);
 
-        if (contexto.isGridSnappingHabilitado()) {
+        if (contexto.isGridSnappingHabilitado()) { // linhas da grade a cada 20 px
             gc.setStroke(Color.web("#e6e6e6"));
             gc.setLineWidth(1);
             for (double x = 0; x < w; x += EditorContext.TAMANHO_GRADE) gc.strokeLine(x, 0, x, h);
@@ -108,7 +115,7 @@ public class ContainerApp extends Application {
         for (FormaGeometrica f : contexto.getFormas()) desenharForma(f, contexto.getSelecionados().contains(f));
 
         FormaGeometrica emAndamento = contexto.getFormaEmAndamento();
-        if (emAndamento != null) {
+        if (emAndamento != null) { // prévia tracejada da forma sendo criada
             gc.setLineDashes(6);
             desenharForma(emAndamento, false);
             gc.setLineDashes();
@@ -125,8 +132,10 @@ public class ContainerApp extends Application {
         }
     }
 
+    /** Desenha uma forma como polígono; se selecionada, destaca com borda verde e vértices vermelhos. */
     private void desenharForma(FormaGeometrica f, boolean selecionada) {
         GraphicsContext gc = areaDeDesenho.getGraphicsContext2D();
+        // o JavaFX desenha polígonos a partir de dois vetores: os x e os y
         List<Ponto> pontos = f.getPontos();
         int n = pontos.size();
         double[] xs = new double[n], ys = new double[n];
@@ -156,6 +165,7 @@ public class ContainerApp extends Application {
         }
     }
 
+    /** Pergunta onde salvar e grava o JSON; erro de disco vira alerta. */
     private void salvarArquivo() {
         FileChooser fc = seletorJson();
         fc.setInitialFileName("desenho.json");
@@ -170,6 +180,7 @@ public class ContainerApp extends Application {
         }
     }
 
+    /** Abre um JSON; arquivo corrompido mostra alerta e o programa continua aberto. */
     private void carregarArquivo() {
         if (!confirmarDescarte()) return;
         File arquivo = seletorJson().showOpenDialog(stage);
@@ -192,12 +203,14 @@ public class ContainerApp extends Application {
         return alerta.showAndWait().filter(ButtonType.YES::equals).isPresent();
     }
 
+    /** Janela de erro com título e detalhe. */
     private void erro(String cabecalho, String detalhe) {
         Alert alerta = new Alert(Alert.AlertType.ERROR, detalhe);
         alerta.setHeaderText(cabecalho);
         alerta.showAndWait();
     }
 
+    /** Diálogo de arquivo que mostra só arquivos .json. */
     private static FileChooser seletorJson() {
         FileChooser fc = new FileChooser();
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Desenho JSON", "*.json"));

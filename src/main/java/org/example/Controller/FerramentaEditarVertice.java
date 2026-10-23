@@ -8,11 +8,12 @@ import java.util.List;
 
 /** Pressiona perto de um vértice e arrasta para movê-lo. */
 public class FerramentaEditarVertice implements Ferramenta {
-    private static final double TOLERANCIA = 8;
+    private static final double TOLERANCIA = 8; // distância máxima (px) para "pegar" um vértice
 
-    private Ponto verticeSelecionado;
+    private Ponto verticeSelecionado; // referência ao próprio Ponto da forma: mexer nele mexe na forma
     private boolean alterou;
 
+    /** Procura o vértice mais próximo, começando pela forma que está por cima. */
     @Override
     public void aoPressionarMouse(MouseEvent e, EditorContext ctx) {
         verticeSelecionado = null;

@@ -11,20 +11,24 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-/** Contexto do State: guarda as formas, a seleção e a ferramenta ativa. */
+/**
+ * Contexto do padrão State e "cérebro" do editor: guarda as formas, a seleção,
+ * a ferramenta ativa, o estilo atual e o histórico. Não conhece nenhuma tela.
+ */
 public class EditorContext {
-    public static final double TAMANHO_GRADE = 20;
+    public static final double TAMANHO_GRADE = 20; // espaçamento da grade magnética, em pixels
 
-    private List<FormaGeometrica> formas = new ArrayList<>();
+    private List<FormaGeometrica> formas = new ArrayList<>(); // ordem da lista = ordem das camadas
     private final List<FormaGeometrica> selecionados = new ArrayList<>();
-    private FormaGeometrica formaEmAndamento;
-    private Ferramenta ferramentaAtual = new FerramentaSelecionar();
+    private FormaGeometrica formaEmAndamento; // prévia da forma sendo desenhada
+    private Ferramenta ferramentaAtual = new FerramentaSelecionar(); // estado atual (State)
     private boolean gridSnappingHabilitado;
 
     private final HistoricoController historico = new HistoricoController();
     private boolean alteracoesNaoSalvas;
     private double[] caixaSelecao; // x1, y1, x2, y2 enquanto arrasta a caixa de seleção
 
+    // Estilo usado nas próximas formas desenhadas
     private String corPreenchimentoHex = "#d3d3d3";
     private String corBordaHex = "#000000";
     private double espessuraBorda = 2;
@@ -38,12 +42,14 @@ public class EditorContext {
     public void requestStatsUpdate() { onStats.run(); }
     public void avisar(String mensagem) { onAviso.accept(mensagem); }
 
+    /** Grade magnética: arredonda para o múltiplo de 20 mais próximo (se ligada). */
     public double aplicarSnap(double valor) {
         return gridSnappingHabilitado ? Math.round(valor / TAMANHO_GRADE) * TAMANHO_GRADE : valor;
     }
 
     // ---------- histórico ----------
 
+    /** Tira uma "foto" do desenho antes de qualquer alteração (Memento). */
     public void registrarEstado() {
         historico.registrarEstado(formas);
         alteracoesNaoSalvas = true;
@@ -59,6 +65,7 @@ public class EditorContext {
         aposHistorico();
     }
 
+    /** Depois de desfazer/refazer, a seleção antiga não vale mais (são objetos novos). */
     private void aposHistorico() {
         selecionados.clear();
         alteracoesNaoSalvas = true;
@@ -85,7 +92,7 @@ public class EditorContext {
         formas.add(f);
     }
 
-    /** Forma mais ao topo sob o cursor, ou null. */
+    /** Forma mais ao topo sob o cursor, ou null (percorre de trás pra frente). */
     public FormaGeometrica formaEm(double x, double y) {
         for (int i = formas.size() - 1; i >= 0; i--) {
             if (formas.get(i).contemPonto(x, y)) return formas.get(i);
@@ -103,6 +110,7 @@ public class EditorContext {
         }
     }
 
+    /** Seleciona as formas cujo centroide está dentro do retângulo arrastado. */
     public void selecionarNaCaixa(double x1, double y1, double x2, double y2, boolean adicionar) {
         if (!adicionar) selecionados.clear();
         double minX = Math.min(x1, x2), maxX = Math.max(x1, x2), minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
@@ -127,6 +135,7 @@ public class EditorContext {
         atualizarTudo();
     }
 
+    /** Composite: dá o mesmo groupId (aleatório e único) a todas as selecionadas. */
     public void agruparSelecionados() {
         if (selecionados.size() < 2) {
             avisar("Selecione ao menos 2 formas para agrupar (Shift + clique ou caixa de seleção).");
@@ -145,6 +154,7 @@ public class EditorContext {
         atualizarTudo();
     }
 
+    /** Camadas: o fim da lista é desenhado por último, então fica por cima. */
     public void trazerParaFrente() {
         if (selecionados.isEmpty()) return;
         registrarEstado();
@@ -153,6 +163,7 @@ public class EditorContext {
         atualizarTudo();
     }
 
+    /** Camadas: o começo da lista é desenhado primeiro, então fica por baixo. */
     public void enviarParaTras() {
         if (selecionados.isEmpty()) return;
         registrarEstado();
@@ -165,12 +176,12 @@ public class EditorContext {
     public void duplicarSelecionados() {
         if (selecionados.isEmpty()) return;
         registrarEstado();
-        Map<String, String> novosGrupos = new HashMap<>();
+        Map<String, String> novosGrupos = new HashMap<>(); // groupId antigo -> groupId novo
         List<FormaGeometrica> copias = new ArrayList<>();
         for (FormaGeometrica f : selecionados) {
             FormaGeometrica c = f.clonar();
             if (c.getGroupId() != null) c.setGroupId(novosGrupos.computeIfAbsent(c.getGroupId(), k -> UUID.randomUUID().toString()));
-            c.transladar(TAMANHO_GRADE, TAMANHO_GRADE);
+            c.transladar(TAMANHO_GRADE, TAMANHO_GRADE); // desloca para a cópia aparecer
             copias.add(c);
         }
         formas.addAll(copias);
@@ -199,9 +210,11 @@ public class EditorContext {
     /**
      * Cada forma se transforma em torno do próprio centroide; depois é transladada para que o
      * resultado seja o mesmo de transformar em torno do centro da seleção (comportamento de grupo).
+     * op = a transformação da forma; linear = a mesma conta aplicada a um vetor.
      */
     private void transformarSelecionados(Consumer<FormaGeometrica> op, UnaryOperator<Ponto> linear) {
         if (selecionados.isEmpty()) return;
+        // pivô = média dos centroides das formas selecionadas
         double px = 0, py = 0;
         for (FormaGeometrica f : selecionados) {
             px += f.getCentroide().getX();
@@ -212,7 +225,7 @@ public class EditorContext {
         for (FormaGeometrica f : selecionados) {
             Ponto c = f.getCentroide();
             op.accept(f);
-            Ponto v = linear.apply(new Ponto(c.getX() - px, c.getY() - py));
+            Ponto v = linear.apply(new Ponto(c.getX() - px, c.getY() - py)); // onde o centro da forma deveria ir
             f.transladar(px + v.getX() - c.getX(), py + v.getY() - c.getY());
         }
     }
@@ -264,7 +277,7 @@ public class EditorContext {
         formaEmAndamento = f;
     }
 
-    /** Trocar de ferramenta finaliza o polígono em andamento se ele já for válido (3+ pontos). */
+    /** State: troca a ferramenta. Finaliza o polígono em andamento se ele já for válido (3+ pontos). */
     public void setFerramentaAtual(Ferramenta ferramenta) {
         if (formaEmAndamento != null) {
             if (formaEmAndamento.getQuantidadePontos() >= 3) adicionarForma(formaEmAndamento);
@@ -280,6 +293,8 @@ public class EditorContext {
     public void setGridSnappingHabilitado(boolean habilitado) { gridSnappingHabilitado = habilitado; }
     public void setCaixaSelecao(double[] caixa) { caixaSelecao = caixa; }
     public void marcarSalvo() { alteracoesNaoSalvas = false; }
+
+    // A View registra aqui o que fazer quando o Controller pedir redesenho, estatísticas ou aviso
     public void setOnRedraw(Runnable r) { onRedraw = r; }
     public void setOnStats(Runnable r) { onStats = r; }
     public void setOnAviso(Consumer<String> c) { onAviso = c; }

@@ -17,17 +17,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Conversão do documento para/de JSON. */
+/** Conversão do documento para/de JSON, usando a biblioteca Gson. */
 public class PersistenciaController {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    // Só estes tipos podem ser criados a partir do arquivo (o campo "tipo" escolhe a classe)
     private static final Map<String, Class<? extends FormaBase>> TIPOS = Map.of(
             "Poligono", Poligono.class,
             "Circulo", Circulo.class,
             "Quadrado", Quadrado.class,
             "Hexagono", Hexagono.class);
 
+    /** O que vem de um arquivo carregado: se a grade estava ligada e as formas. */
     public record Documento(boolean gradeHabilitada, List<FormaGeometrica> formas) {}
 
+    /** Monta o JSON: configurações do canvas + lista de formas (pontos, estilo, groupId e tipo). */
     public static String paraJson(List<FormaGeometrica> formas, double largura, double altura, boolean grade) {
         JsonObject canvas = new JsonObject();
         canvas.addProperty("largura", largura);
@@ -37,8 +41,8 @@ public class PersistenciaController {
 
         JsonArray lista = new JsonArray();
         for (FormaGeometrica f : formas) {
-            JsonObject o = GSON.toJsonTree(f).getAsJsonObject();
-            o.addProperty("tipo", f.getClass().getSimpleName());
+            JsonObject o = GSON.toJsonTree(f).getAsJsonObject(); // Gson lê os atributos da forma
+            o.addProperty("tipo", f.getClass().getSimpleName()); // ex.: "Quadrado", para recriar ao carregar
             lista.add(o);
         }
 
@@ -49,7 +53,10 @@ public class PersistenciaController {
         return GSON.toJson(raiz);
     }
 
-    /** @throws IllegalArgumentException se o conteúdo estiver corrompido ou violar as regras das formas. */
+    /**
+     * Lê o JSON, recria cada forma pela classe certa e valida as regras.
+     * @throws IllegalArgumentException se o conteúdo estiver corrompido ou violar as regras das formas.
+     */
     public static Documento deJson(String json) {
         try {
             JsonObject raiz = JsonParser.parseString(json).getAsJsonObject();
@@ -60,11 +67,12 @@ public class PersistenciaController {
                 Class<? extends FormaBase> classe = TIPOS.get(o.get("tipo").getAsString());
                 if (classe == null) throw new IllegalArgumentException("tipo de forma desconhecido: " + o.get("tipo"));
                 FormaBase f = GSON.fromJson(o, classe);
-                f.validar();
+                f.validar(); // recusa polígono com menos de 3 pontos, cor inválida etc.
                 formas.add(f);
             }
             return new Documento(grade, formas);
         } catch (RuntimeException e) { // JsonParseException, NullPointerException, IllegalStateException...
+            // Qualquer problema vira um único tipo de erro, que a tela mostra num alerta
             throw new IllegalArgumentException("Arquivo corrompido ou inválido: " + e.getMessage(), e);
         }
     }

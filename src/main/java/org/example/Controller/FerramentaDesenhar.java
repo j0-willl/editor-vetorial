@@ -9,14 +9,15 @@ public class FerramentaDesenhar implements Ferramenta {
 
     @Override
     public void aoClicar(MouseEvent e, EditorContext ctx) {
-        if (!e.isStillSincePress()) return;
+        if (!e.isStillSincePress()) return; // ignora "clique" que na verdade foi um arrasto
+        // o polígono em andamento fica guardado no contexto (para a tela desenhar a prévia)
         Poligono p = ctx.getFormaEmAndamento() instanceof Poligono emAndamento ? emAndamento : null;
 
-        if (e.getClickCount() >= 2) {
+        if (e.getClickCount() >= 2) { // duplo clique fecha a forma
             if (p != null) finalizar(p, ctx);
             return;
         }
-        if (p == null) {
+        if (p == null) { // primeiro clique começa um polígono novo
             p = new Poligono();
             ctx.setFormaEmAndamento(p);
         }
@@ -24,6 +25,7 @@ public class FerramentaDesenhar implements Ferramenta {
         ctx.requestRedraw();
     }
 
+    /** Valida (mínimo 3 pontos) e, se estiver ok, adiciona o polígono ao desenho. */
     private void finalizar(Poligono p, EditorContext ctx) {
         try {
             p.validar();
