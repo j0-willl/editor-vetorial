@@ -1,6 +1,10 @@
 package org.example;
 
+import javafx.event.EventType;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import org.example.Controller.EditorContext;
+import org.example.Controller.FerramentaInserirForma;
 import org.example.Controller.HistoricoController;
 import org.example.Controller.PersistenciaController;
 import org.example.Models.Circulo;
@@ -15,8 +19,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/** Testes automáticos (JUnit 5) das regras, cálculos e padrões. Rodar com: mvnw test */
 class EditorTest {
-    private static final double EPS = 1e-9;
+    private static final double EPS = 1e-9; // margem de erro para comparar doubles
 
     private static Poligono triangulo() { // catetos 4 e 3: área 6, perímetro 12
         Poligono p = new Poligono();
@@ -26,6 +31,7 @@ class EditorTest {
         return p;
     }
 
+    /** Gauss e perímetro no triângulo 3-4-5 e num quadrado de lado 10. */
     @Test
     void areaEPerimetro() {
         assertEquals(6, triangulo().calcularArea(), EPS);
@@ -35,6 +41,7 @@ class EditorTest {
         assertEquals(40, q.calcularPerimetro(), 1e-6);
     }
 
+    /** Polígono com 2 pontos e círculo com raio 0 ou negativo são recusados. */
     @Test
     void validacoes() {
         Poligono p = new Poligono();
@@ -45,6 +52,7 @@ class EditorTest {
         assertThrows(IllegalArgumentException.class, () -> new Circulo(new Ponto(0, 0), -1));
     }
 
+    /** Escala 2 quadruplica a área; rotação e cisalhamento mantêm a área; translação move o centro. */
     @Test
     void transformacoes() {
         Poligono p = triangulo();
@@ -60,6 +68,7 @@ class EditorTest {
         assertEquals(24, p.calcularArea(), 1e-6);
     }
 
+    /** Prototype: mexer na cópia não pode mexer na original. */
     @Test
     void clonarEhCopiaProfunda() {
         Poligono original = triangulo();
@@ -71,6 +80,7 @@ class EditorTest {
         assertInstanceOf(Poligono.class, copia);
     }
 
+    /** Memento: desfazer volta a posição antiga e refazer recupera a nova. */
     @Test
     void desfazerRefazer() {
         HistoricoController h = new HistoricoController();
@@ -83,6 +93,7 @@ class EditorTest {
         assertEquals(50, refeito.get(0).getPontos().get(0).getX(), EPS);
     }
 
+    /** Trocar de ferramenta salva o polígono em andamento se ele tiver 3+ pontos. */
     @Test
     void trocarFerramentaFinalizaPoligonoValido() {
         EditorContext ctx = new EditorContext();
@@ -92,6 +103,33 @@ class EditorTest {
         assertNull(ctx.getFormaEmAndamento());
     }
 
+    /** Evento de mouse falso, para simular cliques e arrastos nos testes. */
+    private static MouseEvent mouse(EventType<MouseEvent> tipo, double x, double y) {
+        return new MouseEvent(tipo, x, y, x, y, MouseButton.PRIMARY, 1,
+                false, false, false, false, true, false, false, false, false, false, null);
+    }
+
+    /** Com a grade ligada, dá pra criar círculo pequeno; um clique sem arrasto usa o tamanho padrão. */
+    @Test
+    void circuloPequenoComGradeLigada() {
+        EditorContext ctx = new EditorContext();
+        ctx.setGridSnappingHabilitado(true);
+        FerramentaInserirForma circulo = new FerramentaInserirForma(FerramentaInserirForma.Tipo.CIRCULO);
+
+        circulo.aoPressionarMouse(mouse(MouseEvent.MOUSE_PRESSED, 101, 99), ctx); // centro gruda em (100, 100)
+        circulo.aoArrastarMouse(mouse(MouseEvent.MOUSE_DRAGGED, 106, 100), ctx);
+        circulo.aoSoltarMouse(mouse(MouseEvent.MOUSE_RELEASED, 106, 100), ctx);
+        FormaGeometrica pequeno = ctx.getFormas().get(0);
+        assertEquals(100, pequeno.getCentroide().getX(), 1e-6);
+        assertEquals(6, pequeno.getPontos().get(0).distancia(pequeno.getCentroide()), 1e-6); // raio 6, não 60
+
+        circulo.aoPressionarMouse(mouse(MouseEvent.MOUSE_PRESSED, 300, 300), ctx);
+        circulo.aoSoltarMouse(mouse(MouseEvent.MOUSE_RELEASED, 300, 300), ctx);
+        FormaGeometrica padrao = ctx.getFormas().get(1);
+        assertEquals(60, padrao.getPontos().get(0).distancia(padrao.getCentroide()), 1e-6);
+    }
+
+    /** Composite: dois quadrados agrupados escalam em torno do centro do grupo (x = 50). */
     @Test
     void grupoEscalaEmTornoDoCentroComum() {
         EditorContext ctx = new EditorContext();
@@ -108,6 +146,7 @@ class EditorTest {
         assertEquals(150, b.getCentroide().getX(), 1e-6);
     }
 
+    /** Salvar e carregar mantém tipo, grupo e área; JSON quebrado ou forma inválida dá erro. */
     @Test
     void jsonIdaEVoltaEArquivoCorrompido() {
         Circulo c = new Circulo(new Ponto(10, 10), 5);
