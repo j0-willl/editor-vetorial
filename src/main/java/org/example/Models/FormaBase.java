@@ -124,7 +124,7 @@ public abstract class FormaBase implements FormaGeometrica {
         }
     }
 
-    /** Regra de negócio: no mínimo 3 pontos válidos e estilo válido. Usada ao fechar polígono e ao carregar arquivo. */
+    /** Regra de negócio: no mínimo 3 pontos válidos, área maior que zero e estilo válido. Usada ao fechar polígono e ao carregar arquivo. */
     public void validar() {
         if (pontos == null || pontos.size() < 3)
             throw new IllegalStateException("Um polígono deve ter no mínimo 3 pontos.");
@@ -132,6 +132,9 @@ public abstract class FormaBase implements FormaGeometrica {
             if (p == null || !Double.isFinite(p.getX()) || !Double.isFinite(p.getY()))
                 throw new IllegalStateException("Ponto com coordenada inválida.");
         }
+        // pontos repetidos ou todos alinhados dão área zero: seria uma linha, não uma forma
+        if (calcularArea() < 1e-6)
+            throw new IllegalStateException("Os pontos não podem estar todos na mesma linha.");
         validarHex(corPreenchimentoHex);
         validarHex(corBordaHex);
         setEspessuraBorda(espessuraBorda); // reaproveita a validação do setter

@@ -1,5 +1,6 @@
 package org.example.Controller;
 
+import org.example.Models.FormaBase;
 import org.example.Models.FormaGeometrica;
 import org.example.Models.Ponto;
 
@@ -277,11 +278,15 @@ public class EditorContext {
         formaEmAndamento = f;
     }
 
-    /** State: troca a ferramenta. Finaliza o polígono em andamento se ele já for válido (3+ pontos). */
+    /** State: troca a ferramenta. Finaliza o polígono em andamento se ele passar na validação. */
     public void setFerramentaAtual(Ferramenta ferramenta) {
         if (formaEmAndamento != null) {
-            if (formaEmAndamento.getQuantidadePontos() >= 3) adicionarForma(formaEmAndamento);
-            else avisar("Polígono descartado: são necessários no mínimo 3 pontos.");
+            try {
+                ((FormaBase) formaEmAndamento).validar(); // mesma regra do duplo clique
+                adicionarForma(formaEmAndamento);
+            } catch (IllegalStateException ex) {
+                avisar("Polígono descartado: " + ex.getMessage());
+            }
         }
         ferramentaAtual = ferramenta;
         formaEmAndamento = null;

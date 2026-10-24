@@ -4,6 +4,7 @@ import javafx.event.EventType;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import org.example.Controller.EditorContext;
+import org.example.Controller.FerramentaDesenhar;
 import org.example.Controller.FerramentaInserirForma;
 import org.example.Controller.HistoricoController;
 import org.example.Controller.PersistenciaController;
@@ -105,8 +106,32 @@ class EditorTest {
 
     /** Evento de mouse falso, para simular cliques e arrastos nos testes. */
     private static MouseEvent mouse(EventType<MouseEvent> tipo, double x, double y) {
-        return new MouseEvent(tipo, x, y, x, y, MouseButton.PRIMARY, 1,
-                false, false, false, false, true, false, false, false, false, false, null);
+        return mouse(tipo, x, y, 1);
+    }
+
+    /** cliques = 1 para clique simples, 2 para duplo clique e assim por diante. */
+    private static MouseEvent mouse(EventType<MouseEvent> tipo, double x, double y, int cliques) {
+        return new MouseEvent(tipo, x, y, x, y, MouseButton.PRIMARY, cliques,
+                false, false, false, false, true, false, false, false, false, true, null);
+    }
+
+    /** Vários cliques no mesmo ponto não viram vértices repetidos, e uma "linha" nunca vira forma. */
+    @Test
+    void cliquesRepetidosNaoGeramLinha() {
+        EditorContext ctx = new EditorContext();
+        FerramentaDesenhar poligono = new FerramentaDesenhar();
+
+        poligono.aoClicar(mouse(MouseEvent.MOUSE_CLICKED, 0, 0, 1), ctx);
+        for (int i = 0; i < 4; i++) poligono.aoClicar(mouse(MouseEvent.MOUSE_CLICKED, 50, 0, 1), ctx);
+        assertEquals(2, ctx.getFormaEmAndamento().getQuantidadePontos()); // e não 5
+
+        poligono.aoClicar(mouse(MouseEvent.MOUSE_CLICKED, 50, 0, 2), ctx); // duplo clique com 2 pontos: não fecha
+        poligono.aoClicar(mouse(MouseEvent.MOUSE_CLICKED, 100, 0, 1), ctx); // 3º ponto, mas alinhado
+        poligono.aoClicar(mouse(MouseEvent.MOUSE_CLICKED, 100, 0, 2), ctx);
+        assertTrue(ctx.getFormas().isEmpty()); // pontos alinhados = área zero, recusado
+
+        ctx.setFerramentaAtual(new org.example.Controller.FerramentaSelecionar()); // trocar também não salva a linha
+        assertTrue(ctx.getFormas().isEmpty());
     }
 
     /** Com a grade ligada, dá pra criar círculo pequeno; um clique sem arrasto usa o tamanho padrão. */

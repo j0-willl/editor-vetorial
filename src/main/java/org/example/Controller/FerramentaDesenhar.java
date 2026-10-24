@@ -6,6 +6,7 @@ import org.example.Models.Ponto;
 
 /** Polígono por cliques: cada clique adiciona um vértice, duplo clique fecha a forma. */
 public class FerramentaDesenhar implements Ferramenta {
+    private static final double DISTANCIA_MINIMA = 3; // px entre um vértice e o anterior
 
     @Override
     public void aoClicar(MouseEvent e, EditorContext ctx) {
@@ -13,19 +14,22 @@ public class FerramentaDesenhar implements Ferramenta {
         // o polígono em andamento fica guardado no contexto (para a tela desenhar a prévia)
         Poligono p = ctx.getFormaEmAndamento() instanceof Poligono emAndamento ? emAndamento : null;
 
-        if (e.getClickCount() >= 2) { // duplo clique fecha a forma
-            if (p != null) finalizar(p, ctx);
+        if (e.getClickCount() >= 2) { // duplo clique fecha a forma; o 3º, 4º... clique rápido é ignorado
+            if (e.getClickCount() == 2 && p != null) finalizar(p, ctx);
             return;
         }
+        Ponto novo = new Ponto(ctx.aplicarSnap(e.getX()), ctx.aplicarSnap(e.getY()));
         if (p == null) { // primeiro clique começa um polígono novo
             p = new Poligono();
             ctx.setFormaEmAndamento(p);
+        } else if (p.getPontos().get(p.getQuantidadePontos() - 1).distancia(novo) < DISTANCIA_MINIMA) {
+            return; // clique repetido no mesmo lugar não vira ponto novo
         }
-        p.adicionarPonto(new Ponto(ctx.aplicarSnap(e.getX()), ctx.aplicarSnap(e.getY())));
+        p.adicionarPonto(novo);
         ctx.requestRedraw();
     }
 
-    /** Valida (mínimo 3 pontos) e, se estiver ok, adiciona o polígono ao desenho. */
+    /** Valida (mínimo 3 pontos e área maior que zero) e, se estiver ok, adiciona o polígono ao desenho. */
     private void finalizar(Poligono p, EditorContext ctx) {
         try {
             p.validar();
